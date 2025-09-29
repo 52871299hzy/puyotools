@@ -31,5 +31,9 @@ namespace PuyoTools.App.Cli.Commands.Archives
         public bool DecodeIfTexture { get; set; }
 
         public bool Verbose { get; set; }
+
+        public string OutputDirectory { get; set; }
+
+        public bool CreateEntries { get; set; }
     }
 }

@@ -83,6 +83,18 @@ namespace PuyoTools.App.Cli.Commands.Archives
             };
             Add(decodeIfTextureOption);
 
+            Option<string> outputOption = new("--output", "-o")
+            {
+                Description = "Output directory for extracted files."
+            };
+            Add(outputOption);
+
+            Option<bool> createEntriesOption = new("--create-entries")
+            {
+                Description = "Create an entries.txt file listing all extracted files."
+            };
+            Add(createEntriesOption);
+
             Option<bool> verboseOption = new("--verbose")
             {
                 Description = "Show verbose output for archives being extracted"
@@ -105,6 +117,8 @@ namespace PuyoTools.App.Cli.Commands.Archives
                     //ExtractIfArchiveNumber = parseResult.GetValue(extractIfArchiveOption),
                     //DecodeIfTextureNumber = parseResult.GetValue(decodeIfTextureOption),
                     Verbose = parseResult.GetValue(verboseOption),
+                    OutputDirectory = parseResult.GetValue(outputOption),
+                    CreateEntries = parseResult.GetValue(createEntriesOption),
                 };
 
                 Execute(options, parseResult.Configuration.Output);
@@ -114,17 +128,48 @@ namespace PuyoTools.App.Cli.Commands.Archives
         private void Execute(ArchiveExtractOptions options, TextWriter writer)
         {
             // Get the files to process by the tool
-            var matcher = new Matcher();
-            matcher.AddIncludePatterns(options.Input);
-            if (options.Exclude?.Any() == true)
+            var allFiles = new List<string>();
+            
+            foreach (var inputPattern in options.Input)
             {
-                matcher.AddExcludePatterns(options.Exclude);
+                var matcher = new Matcher();
+                matcher.AddInclude(inputPattern);
+                if (options.Exclude?.Any() == true)
+                {
+                    matcher.AddExcludePatterns(options.Exclude);
+                }
+
+                // Determine the base directory for this pattern
+                string baseDir;
+                if (Path.IsPathRooted(inputPattern))
+                {
+                    // For absolute paths, use the directory part as base or root if it's just a file
+                    var dirPart = Path.GetDirectoryName(inputPattern);
+                    baseDir = string.IsNullOrEmpty(dirPart) ? Path.GetPathRoot(inputPattern) : dirPart;
+                    
+                    // Adjust the pattern to be relative to baseDir
+                    var fileName = Path.GetFileName(inputPattern);
+                    matcher = new Matcher();
+                    matcher.AddInclude(fileName);
+                    if (options.Exclude?.Any() == true)
+                    {
+                        matcher.AddExcludePatterns(options.Exclude);
+                    }
+                }
+                else
+                {
+                    baseDir = Environment.CurrentDirectory;
+                }
+
+                var matchedFiles = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(baseDir)))
+                    .Files
+                    .Select(x => Path.IsPathRooted(x.Path) ? x.Path : Path.Combine(baseDir, x.Path))
+                    .ToArray();
+
+                allFiles.AddRange(matchedFiles);
             }
 
-            var files = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(Environment.CurrentDirectory)))
-                .Files
-                .Select(x => x.Path)
-                .ToArray();
+            var files = allFiles.ToArray();
 
             // Create options in the format the tool uses
             var toolOptions = new ArchiveExtractorOptions
@@ -138,6 +183,8 @@ namespace PuyoTools.App.Cli.Commands.Archives
                 PrependFileNumber = options.PrependFileNumber,
                 ExtractExtractedArchives = options.ExtractIfArchive,
                 ConvertExtractedTextures = options.DecompressExtracted,
+                OutputDirectory = options.OutputDirectory,
+                ExtractFileStructure = options.CreateEntries,
             };
 
             // Create the progress handler (only if the quiet option is not set)

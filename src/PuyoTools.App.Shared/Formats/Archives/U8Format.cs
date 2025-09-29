@@ -29,7 +29,7 @@ namespace PuyoTools.App.Formats.Archives
 
         public ArchiveReader CreateReader(Stream source) => new U8Reader(source);
 
-        public ArchiveWriter CreateWriter(Stream destination) => null;
+        public ArchiveWriter CreateWriter(Stream destination) => new U8Writer(destination);
 
         public bool Identify(Stream source, string filename) => U8Reader.IsFormat(source);
     }
