@@ -80,7 +80,12 @@ namespace PuyoTools.App.Tools
                         ArchiveReader archive = format.CreateReader(source);
 
                         // Get the appropiate output directory
-                        if (options.ExtractToSourceDirectory)
+                        if (!string.IsNullOrEmpty(options.OutputDirectory))
+                        {
+                            // Use the specified output directory
+                            outPath = Path.Combine(options.OutputDirectory, Path.GetFileNameWithoutExtension(file));
+                        }
+                        else if (options.ExtractToSourceDirectory)
                         {
                             // Extract to the same directory as the source archive
                             outPath = Path.GetDirectoryName(file);

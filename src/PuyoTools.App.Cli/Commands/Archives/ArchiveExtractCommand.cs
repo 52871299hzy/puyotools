@@ -83,6 +83,12 @@ namespace PuyoTools.App.Cli.Commands.Archives
             };
             Add(decodeIfTextureOption);
 
+            Option<string> outputOption = new("--output", "-o")
+            {
+                Description = "Output directory for extracted files."
+            };
+            Add(outputOption);
+
             Option<bool> verboseOption = new("--verbose")
             {
                 Description = "Show verbose output for archives being extracted"
@@ -105,6 +111,7 @@ namespace PuyoTools.App.Cli.Commands.Archives
                     //ExtractIfArchiveNumber = parseResult.GetValue(extractIfArchiveOption),
                     //DecodeIfTextureNumber = parseResult.GetValue(decodeIfTextureOption),
                     Verbose = parseResult.GetValue(verboseOption),
+                    OutputDirectory = parseResult.GetValue(outputOption),
                 };
 
                 Execute(options, parseResult.Configuration.Output);
@@ -138,6 +145,7 @@ namespace PuyoTools.App.Cli.Commands.Archives
                 PrependFileNumber = options.PrependFileNumber,
                 ExtractExtractedArchives = options.ExtractIfArchive,
                 ConvertExtractedTextures = options.DecompressExtracted,
+                OutputDirectory = options.OutputDirectory,
             };
 
             // Create the progress handler (only if the quiet option is not set)

@@ -25,5 +25,7 @@ namespace PuyoTools.App.Tools
         public bool ExtractExtractedArchives { get; set; }
 
         public bool ConvertExtractedTextures { get; set; }
+
+        public string OutputDirectory { get; set; }
     }
 }
