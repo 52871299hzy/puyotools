@@ -1,6 +1,10 @@
 ﻿using PuyoTools.App.Formats.Compression;
 using PuyoTools.App.Formats.Textures;
 using PuyoTools.Core.Textures;
+using PuyoTools.Core.Textures.Gvr;
+using PuyoTools.Core.Textures.Pvr;
+using PuyoTools.Core.Textures.Gim;
+using PuyoTools.Core.Textures.Svr;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -63,10 +67,11 @@ namespace PuyoTools.App.Tools
                                     source.Position = 0;
                                     format = TextureFactory.GetFormat(source, Path.GetFileName(file));
                                     
-                                    // Report decompression information
+                                    // Report detailed decompression information
                                     if (format != null && options.OutputWriter != null)
                                     {
-                                        options.OutputWriter.WriteLine($"Decompressed {compressionFormat.Name} -> {format.Name} format: {file}");
+                                        string detailedInfo = GetDetailedFormatInfo(format, source, file);
+                                        options.OutputWriter.WriteLine($"Decompressed {compressionFormat.Name} -> {detailedInfo}");
                                     }
                                 }
                             }
@@ -79,10 +84,11 @@ namespace PuyoTools.App.Tools
                         }
                         else
                         {
-                            // Report format information for non-compressed textures
+                            // Report detailed format information for non-compressed textures
                             if (options.OutputWriter != null)
                             {
-                                options.OutputWriter.WriteLine($"Detected {format.Name} format: {file}");
+                                string detailedInfo = GetDetailedFormatInfo(format, source, file);
+                                options.OutputWriter.WriteLine(detailedInfo);
                             }
                         }
 
@@ -193,6 +199,70 @@ namespace PuyoTools.App.Tools
                 {
                     // Meh, just ignore the error.
                 }
+            }
+        }
+
+        /// <summary>
+        /// Gets detailed format information for a texture by inspecting the codec.
+        /// </summary>
+        /// <param name="format">The detected texture format.</param>
+        /// <param name="source">The stream containing the texture data.</param>
+        /// <param name="file">The filename for display purposes.</param>
+        /// <returns>A detailed format description string.</returns>
+        private string GetDetailedFormatInfo(ITextureFormat format, Stream source, string file)
+        {
+            try
+            {
+                long originalPosition = source.Position;
+                source.Position = 0;
+
+                string formatDetails = $"Detected {format.Name} format: {file}";
+
+                // Get detailed information based on format type
+                if (format.Name == "GVR")
+                {
+                    var gvrDecoder = new GvrTextureDecoder(source);
+                    formatDetails = $"Detected {format.Name} format: {file} " +
+                                   $"[{gvrDecoder.Width}x{gvrDecoder.Height}, " +
+                                   $"Pixel: {gvrDecoder.PixelFormat}, " +
+                                   (gvrDecoder.PaletteFormat.HasValue ? $"Palette: {gvrDecoder.PaletteFormat.Value}, " : "") +
+                                   (gvrDecoder.GlobalIndex.HasValue ? $"GBIX: {gvrDecoder.GlobalIndex.Value}" : "No GBIX") + "]";
+                }
+                else if (format.Name == "PVR")
+                {
+                    var pvrDecoder = new PvrTextureDecoder(source);
+                    formatDetails = $"Detected {format.Name} format: {file} " +
+                                   $"[{pvrDecoder.Width}x{pvrDecoder.Height}, " +
+                                   $"Pixel: {pvrDecoder.PixelFormat}, " +
+                                   $"Data: {pvrDecoder.DataFormat}, " +
+                                   (pvrDecoder.CompressionFormat != PvrCompressionFormat.None ? $"Compression: {pvrDecoder.CompressionFormat}, " : "") +
+                                   (pvrDecoder.GlobalIndex.HasValue ? $"GBIX: {pvrDecoder.GlobalIndex.Value}" : "No GBIX") + "]";
+                }
+                else if (format.Name == "GIM")
+                {
+                    var gimDecoder = new GimTextureDecoder(source);
+                    formatDetails = $"Detected {format.Name} format: {file} " +
+                                   $"[{gimDecoder.Width}x{gimDecoder.Height}, " +
+                                   $"Pixel: {gimDecoder.PixelFormat}, " +
+                                   (gimDecoder.PaletteFormat.HasValue ? $"Palette: {gimDecoder.PaletteFormat.Value}, " : "") +
+                                   (gimDecoder.Metadata != null ? $"Metadata: {gimDecoder.Metadata.OriginalFilename}" : "") + "]";
+                }
+                else if (format.Name == "SVR")
+                {
+                    var svrDecoder = new SvrTextureDecoder(source);
+                    formatDetails = $"Detected {format.Name} format: {file} " +
+                                   $"[{svrDecoder.Width}x{svrDecoder.Height}, " +
+                                   $"Pixel: {svrDecoder.PixelFormat}" +
+                                   (svrDecoder.GlobalIndex.HasValue ? $", GBIX: {svrDecoder.GlobalIndex.Value}" : ", No GBIX") + "]";
+                }
+
+                source.Position = originalPosition;
+                return formatDetails;
+            }
+            catch
+            {
+                // Fall back to basic format info if detailed parsing fails
+                return $"Detected {format.Name} format: {file}";
             }
         }
     }
