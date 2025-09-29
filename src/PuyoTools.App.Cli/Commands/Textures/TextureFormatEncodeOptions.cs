@@ -11,5 +11,7 @@ namespace PuyoTools.App.Cli.Commands.Textures
         public string[] Input { get; set; }
 
         public string[] Exclude { get; set; }
+
+        public string Output { get; set; }
     }
 }

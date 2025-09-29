@@ -12,5 +12,7 @@ namespace PuyoTools.App.Tools
         public bool OutputToSourceDirectory { get; set; }
 
         public bool DeleteSource { get; set; }
+
+        public string OutputDirectory { get; set; }
     }
 }

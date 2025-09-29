@@ -51,6 +51,10 @@ namespace PuyoTools.App.Tools
                     {
                         outPath = Path.GetDirectoryName(file);
                     }
+                    else if (!string.IsNullOrEmpty(options.OutputDirectory))
+                    {
+                        outPath = options.OutputDirectory;
+                    }
                     else
                     {
                         outPath = Path.Combine(Path.GetDirectoryName(file), "Encoded Textures");
