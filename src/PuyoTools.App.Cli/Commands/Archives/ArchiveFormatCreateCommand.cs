@@ -96,9 +96,31 @@ namespace PuyoTools.App.Cli.Commands.Archives
                     matcher.AddExcludePatterns(options.Exclude);
                 }
 
-                var matchedFiles = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(Environment.CurrentDirectory)))
+                // Determine the base directory for this pattern
+                string baseDir;
+                if (Path.IsPathRooted(filename))
+                {
+                    // For absolute paths, use the directory part as base or root if it's just a file
+                    var dirPart = Path.GetDirectoryName(filename);
+                    baseDir = string.IsNullOrEmpty(dirPart) ? Path.GetPathRoot(filename) : dirPart;
+                    
+                    // Adjust the pattern to be relative to baseDir
+                    var fileName = Path.GetFileName(filename);
+                    matcher = new Matcher();
+                    matcher.AddInclude(fileName);
+                    if (options.Exclude?.Any() == true)
+                    {
+                        matcher.AddExcludePatterns(options.Exclude);
+                    }
+                }
+                else
+                {
+                    baseDir = Environment.CurrentDirectory;
+                }
+
+                var matchedFiles = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(baseDir)))
                     .Files
-                    .Select(x => x.Path)
+                    .Select(x => Path.IsPathRooted(x.Path) ? x.Path : Path.Combine(baseDir, x.Path))
                     .Select(x => new ArchiveCreatorFileEntry
                     {
                         SourceFile = x,
