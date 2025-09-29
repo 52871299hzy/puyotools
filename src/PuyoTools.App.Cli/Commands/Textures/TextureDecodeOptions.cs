@@ -12,6 +12,8 @@ namespace PuyoTools.App.Cli.Commands.Textures
 
         public string[] Exclude { get; set; }
 
+        public string Output { get; set; }
+
         public bool Compressed { get; set; }
 
         public bool Overwrite { get; set; }

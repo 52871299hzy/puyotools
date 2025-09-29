@@ -62,6 +62,12 @@ namespace PuyoTools.App.Tools
 
                                     source.Position = 0;
                                     format = TextureFactory.GetFormat(source, Path.GetFileName(file));
+                                    
+                                    // Report decompression information
+                                    if (format != null && options.OutputWriter != null)
+                                    {
+                                        options.OutputWriter.WriteLine($"Decompressed {compressionFormat.Name} -> {format.Name} format: {file}");
+                                    }
                                 }
                             }
 
@@ -69,6 +75,14 @@ namespace PuyoTools.App.Tools
                             if (format == null)
                             {
                                 continue;
+                            }
+                        }
+                        else
+                        {
+                            // Report format information for non-compressed textures
+                            if (options.OutputWriter != null)
+                            {
+                                options.OutputWriter.WriteLine($"Detected {format.Name} format: {file}");
                             }
                         }
 
@@ -148,6 +162,10 @@ namespace PuyoTools.App.Tools
                     if (options.OutputToSourceDirectory)
                     {
                         outPath = Path.GetDirectoryName(file);
+                    }
+                    else if (!string.IsNullOrEmpty(options.OutputDirectory))
+                    {
+                        outPath = options.OutputDirectory;
                     }
                     else
                     {

@@ -30,6 +30,18 @@ namespace PuyoTools.App.Cli.Commands.Textures
             };
             Options.Add(excludeOption);
 
+            Option<string> outputOption = new("--output", "-o")
+            {
+                Description = "Output directory for decoded textures. If not specified, creates 'Decoded Textures' subdirectory."
+            };
+            Options.Add(outputOption);
+
+            Option<bool> compressedOption = new("--compressed")
+            {
+                Description = "Also decode compressed textures."
+            };
+            Options.Add(compressedOption);
+
             Option<bool> overwriteOption = new("--overwrite")
             {
                 Description = "Overwrite source texture file with its decoded texture file."
@@ -48,6 +60,8 @@ namespace PuyoTools.App.Cli.Commands.Textures
                 {
                     Input = parseResult.GetValue(inputOption),
                     Exclude = parseResult.GetValue(excludeOption),
+                    Output = parseResult.GetValue(outputOption),
+                    Compressed = parseResult.GetValue(compressedOption),
                     Overwrite = parseResult.GetValue(overwriteOption),
                     Delete = parseResult.GetValue(deleteOption),
                 };
@@ -59,17 +73,47 @@ namespace PuyoTools.App.Cli.Commands.Textures
         private void Execute(TextureDecodeOptions options, TextWriter writer)
         {
             // Get the files to process by the tool
-            var matcher = new Matcher();
-            matcher.AddIncludePatterns(options.Input);
-            if (options.Exclude?.Any() == true)
-            {
-                matcher.AddExcludePatterns(options.Exclude);
-            }
+            // Handle absolute paths by using individual patterns instead of bulk processing
+            var allFiles = new List<string>();
 
-            var files = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(Environment.CurrentDirectory)))
-                .Files
-                .Select(x => x.Path)
-                .ToArray();
+            foreach (var inputPattern in options.Input)
+            {
+                var matcher = new Matcher();
+                matcher.AddInclude(inputPattern);
+                if (options.Exclude?.Any() == true)
+                {
+                    matcher.AddExcludePatterns(options.Exclude);
+                }
+
+                // Determine the base directory for this pattern
+                string baseDir;
+                if (Path.IsPathRooted(inputPattern))
+                {
+                    // For absolute paths, use the directory part as base or root if it's just a file
+                    var dirPart = Path.GetDirectoryName(inputPattern);
+                    baseDir = string.IsNullOrEmpty(dirPart) ? Path.GetPathRoot(inputPattern) : dirPart;
+                    
+                    // Adjust the pattern to be relative to baseDir
+                    var fileName = Path.GetFileName(inputPattern);
+                    matcher = new Matcher();
+                    matcher.AddInclude(fileName);
+                    if (options.Exclude?.Any() == true)
+                    {
+                        matcher.AddExcludePatterns(options.Exclude);
+                    }
+                }
+                else
+                {
+                    baseDir = Environment.CurrentDirectory;
+                }
+
+                var files = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(baseDir)))
+                    .Files
+                    .Select(x => Path.IsPathRooted(x.Path) ? x.Path : Path.Combine(baseDir, x.Path))
+                    .ToArray();
+
+                allFiles.AddRange(files);
+            }
 
             // Create options in the format the tool uses
             var toolOptions = new TextureDecoderOptions
@@ -77,6 +121,8 @@ namespace PuyoTools.App.Cli.Commands.Textures
                 DecodeCompressedTextures = options.Compressed,
                 OutputToSourceDirectory = options.Overwrite,
                 DeleteSource = options.Delete,
+                OutputDirectory = options.Output,
+                OutputWriter = writer,
             };
 
             // Create the progress handler (only if the quiet option is not set)
@@ -87,7 +133,7 @@ namespace PuyoTools.App.Cli.Commands.Textures
 
             // Execute the tool
             var tool = new TextureDecoder(toolOptions);
-            tool.Execute(files, progress);
+            tool.Execute(allFiles, progress);
         }
     }
 }

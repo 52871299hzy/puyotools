@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace PuyoTools.App.Tools
@@ -11,5 +12,9 @@ namespace PuyoTools.App.Tools
         public bool OutputToSourceDirectory { get; set; }
 
         public bool DeleteSource { get; set; }
+
+        public string OutputDirectory { get; set; }
+
+        public TextWriter OutputWriter { get; set; }
     }
 }
