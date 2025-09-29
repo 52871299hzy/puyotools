@@ -33,5 +33,7 @@ namespace PuyoTools.App.Cli.Commands.Archives
         public bool Verbose { get; set; }
 
         public string OutputDirectory { get; set; }
+
+        public bool CreateEntries { get; set; }
     }
 }

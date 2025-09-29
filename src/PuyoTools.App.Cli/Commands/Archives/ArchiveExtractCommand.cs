@@ -89,6 +89,12 @@ namespace PuyoTools.App.Cli.Commands.Archives
             };
             Add(outputOption);
 
+            Option<bool> createEntriesOption = new("--create-entries")
+            {
+                Description = "Create an entries.txt file listing all extracted files."
+            };
+            Add(createEntriesOption);
+
             Option<bool> verboseOption = new("--verbose")
             {
                 Description = "Show verbose output for archives being extracted"
@@ -112,6 +118,7 @@ namespace PuyoTools.App.Cli.Commands.Archives
                     //DecodeIfTextureNumber = parseResult.GetValue(decodeIfTextureOption),
                     Verbose = parseResult.GetValue(verboseOption),
                     OutputDirectory = parseResult.GetValue(outputOption),
+                    CreateEntries = parseResult.GetValue(createEntriesOption),
                 };
 
                 Execute(options, parseResult.Configuration.Output);
@@ -177,6 +184,7 @@ namespace PuyoTools.App.Cli.Commands.Archives
                 ExtractExtractedArchives = options.ExtractIfArchive,
                 ConvertExtractedTextures = options.DecompressExtracted,
                 OutputDirectory = options.OutputDirectory,
+                ExtractFileStructure = options.CreateEntries,
             };
 
             // Create the progress handler (only if the quiet option is not set)
